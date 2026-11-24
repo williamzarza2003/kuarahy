@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import Termo from './Termo.tsx'
+import Render from './Render.tsx'
 import type { Variante } from '../data/variantes.ts'
 
 // Un día de enero en Ciudad del Este, contado por el termo
@@ -24,7 +24,7 @@ function horaTexto(h: number) {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
 }
 
-export default function Escena({ variante }: { variante: Variante }) {
+export default function Escena({ color }: { color: Variante['id'] }) {
   const seccion = useRef<HTMLElement>(null)
   const hora = useRef<HTMLSpanElement>(null)
   const afuera = useRef<HTMLSpanElement>(null)
@@ -114,7 +114,8 @@ export default function Escena({ variante }: { variante: Variante }) {
           </ol>
         </div>
 
-        <Termo variante={variante} className="escena__termo" />
+        {/* El mismo render de Blender del color elegido: la escena y el producto son uno solo */}
+        <Render nombre={`estudio-${color}`} alt="" className="escena__termo" sizes="(max-width: 900px) 40vw, 26vw" ancho={1200} alto={1500} />
 
         <dl className="escena__datos">
           <div className="dato dato--hora">

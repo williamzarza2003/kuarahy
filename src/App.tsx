@@ -1,17 +1,20 @@
-import { useState, type FormEvent } from 'react'
-import Termo from './components/Termo.tsx'
+import { useEffect, useState, type FormEvent } from 'react'
 import Escena from './components/Escena.tsx'
-import { Guampa } from './components/Equipo.tsx'
-import { variantes, type Variante } from './data/variantes.ts'
+import Personalizador from './components/Personalizador.tsx'
+import Galeria from './components/Galeria.tsx'
+import VideoSpot from './components/VideoSpot.tsx'
+import Confianza from './components/Confianza.tsx'
+import Render from './components/Render.tsx'
+import { aURL, desdeURL, guaranies, precio, varianteDe, type Configuracion } from './data/configuracion.ts'
 
 const ficha = [
-  { dato: 'Capacidad', valor: '1,2 litros', nota: 'Una ronda larga para cinco' },
+  { dato: 'Capacidad', valor: '1 L o 1,5 L', nota: 'Una ronda para cuatro, o la larga de la siesta' },
   { dato: 'Hielo', valor: '24 horas', nota: 'Con el termo lleno a la sombra, a 40°' },
   { dato: 'Agua fría', valor: '36 horas', nota: 'Debajo de 10° sin hielo extra' },
   { dato: 'Material', valor: 'Acero 304', nota: 'Doble pared al vacío, sin plástico en contacto con el agua' },
-  { dato: 'Boca', valor: '5,5 cm', nota: 'Entran los cubitos grandes de la heladera' },
-  { dato: 'Pico', valor: 'Vertedor', nota: 'Sirve de a poco, con una mano, sin abrir la tapa' },
-  { dato: 'Peso vacío', valor: '540 g', nota: 'Con manija lateral de agarre' },
+  { dato: 'Boca', valor: '8,5 cm', nota: 'Entran los cubitos grandes de la heladera' },
+  { dato: 'Tapa', valor: 'Clásica o pico', nota: 'Con asa plegable, o con pico cebador para servir con una mano' },
+  { dato: 'Peso vacío', valor: '560 g', nota: 'Con manija lateral de agarre' },
   { dato: 'Garantía', valor: '2 años', nota: 'Si pierde el vacío, te damos otro' },
 ]
 
@@ -40,10 +43,19 @@ function Termometro({ temp }: { temp: number }) {
 }
 
 export default function App() {
-  const [variante, setVariante] = useState<Variante>(variantes[0])
+  const [config, setConfig] = useState<Configuracion>(() => desdeURL(location.search))
   const [hora, setHora] = useState(15)
-  const [anotado, setAnotado] = useState<{ nombre: string; color: string } | null>(null)
+  const [anotado, setAnotado] = useState<{ nombre: string; resumen: string } | null>(null)
   const [error, setError] = useState('')
+  const variante = varianteDe(config.color)
+
+  // El diseño vive en la URL: se puede compartir o volver a él con atrás/adelante
+  useEffect(() => {
+    const url = `${location.pathname}${aURL(config)}${location.hash}`
+    if (url !== `${location.pathname}${location.search}${location.hash}`) history.replaceState(null, '', url)
+  }, [config])
+
+  const resumen = `${variante.nombre} de ${config.tamano === '15L' ? '1,5 L' : '1 L'}, tapa ${config.tapa === 'pico' ? 'con pico cebador' : 'clásica'}${config.nombre.trim() ? ` y «${config.nombre.trim()}» grabado` : ''}`
 
   const anotar = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -55,7 +67,7 @@ export default function App() {
       return setError('Dejanos un email o un número de WhatsApp con código de área, por ejemplo 0981 123 456.')
     }
     setError('')
-    setAnotado({ nombre: nombre.split(' ')[0], color: variante.nombre })
+    setAnotado({ nombre: nombre.split(' ')[0], resumen })
   }
 
   const h = hora
@@ -71,7 +83,8 @@ export default function App() {
           Kuarahy
         </a>
         <nav aria-label="Secciones">
-          <a href="#colores">Colores</a>
+          <a href="#hacelo">Hacé el tuyo</a>
+          <a href="#fotos">Fotos</a>
           <a href="#ficha">Ficha</a>
           <a href="#quiero" className="boton boton--chico">Quiero el mío</a>
         </nav>
@@ -87,40 +100,30 @@ export default function App() {
               aunque afuera haga 40°.
             </p>
             <div className="portada__acciones">
-              <a href="#quiero" className="boton">Quiero el mío</a>
-              <a href="#colores" className="enlace">Ver los cinco colores</a>
+              <a href="#hacelo" className="boton">Armá el tuyo</a>
+              <a href="#fotos" className="enlace">Ver las fotos</a>
             </div>
           </div>
           <div className="portada__producto">
-            <Termo variante={variante} titulo={`Termo Kuarahy color ${variante.nombre}`} className="portada__termo" />
+            <Render
+              nombre={`estudio-${config.color}`}
+              alt={`Termo Kuarahy color ${variante.nombre}, con manija lateral y tapa de acero`}
+              className="portada__termo"
+              sizes="(max-width: 900px) 70vw, 40vw"
+              ancho={1200}
+              alto={1500}
+              prioridad
+            />
           </div>
         </section>
 
-        <Escena variante={variante} />
+        <Escena color={config.color} />
 
-        <section id="colores" className="colores" aria-labelledby="titulo-colores">
-          <div className="contenedor colores__grilla">
-            <div className="colores__muestra">
-              <Termo variante={variante} titulo={`Termo Kuarahy color ${variante.nombre}`} />
-            </div>
-            <div>
-              <h2 id="titulo-colores">Cinco colores, todos de acá</h2>
-              <fieldset className="selector">
-                <legend className="sr-only">Elegí un color</legend>
-                {variantes.map((v) => (
-                  <label key={v.id} className={v.id === variante.id ? 'swatch swatch--activo' : 'swatch'}>
-                    <input type="radio" name="color" value={v.id} checked={v.id === variante.id} onChange={() => setVariante(v)} />
-                    <span className="swatch__color" style={{ background: v.base }} aria-hidden="true" />
-                    <span className="swatch__nombre">{v.nombre}</span>
-                  </label>
-                ))}
-              </fieldset>
-              <p className="colores__nota" aria-live="polite">
-                <strong>{variante.nombre}.</strong> {variante.nota}
-              </p>
-            </div>
-          </div>
-        </section>
+        <Personalizador config={config} setConfig={setConfig} />
+
+        <Galeria />
+
+        <VideoSpot />
 
         <section className="comparacion" aria-labelledby="titulo-comparacion">
           <div className="contenedor">
@@ -156,9 +159,14 @@ export default function App() {
 
         <section className="equipo" aria-labelledby="titulo-equipo">
           <div className="contenedor equipo__grilla">
-            <div className="equipo__dibujo">
-              <Guampa />
-            </div>
+            <Render
+              nombre="ambiente-monte"
+              alt="Termo Kuarahy verde Monte sobre una mesa de madera al aire libre, junto a una guampa con bombilla y ramitos de yuyos"
+              className="equipo__foto"
+              sizes="(max-width: 900px) 92vw, 50vw"
+              ancho={1800}
+              alto={1200}
+            />
             <div>
               <h2 id="titulo-equipo">La guampa y la bombilla, también</h2>
               <p>
@@ -170,6 +178,7 @@ export default function App() {
                 <li><strong>Bombilla desarmable</strong>: el filtro se desenrosca y no junta yerba.</li>
                 <li><strong>Funda de lona</strong> con correa para llevar todo a la cancha o a la facultad.</li>
               </ul>
+              <p className="equipo__precio"><strong>+{guaranies(100_000)}</strong> sobre el termo que elijas.</p>
             </div>
           </div>
         </section>
@@ -191,6 +200,8 @@ export default function App() {
           </div>
         </section>
 
+        <Confianza />
+
         <section id="quiero" className="quiero" aria-labelledby="titulo-quiero">
           <div className="contenedor quiero__grilla">
             <div>
@@ -199,16 +210,20 @@ export default function App() {
                 La primera tanda sale en diciembre, antes de las fiestas. Anotate y te avisamos cuando
                 esté para retirar o para enviar.
               </p>
-              <p className="quiero__precio"><strong>₲ 289.000</strong> el termo · <strong>₲ 389.000</strong> el equipo completo</p>
+              <div className="quiero__diseno">
+                <Render nombre={`estudio-${config.color}`} alt="" className="quiero__miniatura" sizes="96px" ancho={1200} alto={1500} />
+                <p>
+                  <span>Tu diseño</span>
+                  <strong>{resumen}</strong>
+                  <span>{guaranies(precio(config))} · <a href="#hacelo">Cambiarlo</a></span>
+                </p>
+              </div>
             </div>
             {anotado ? (
               <div className="anotado" role="status">
-                <Termo variante={variante} className="anotado__termo" />
-                <div>
-                  <h3>Listo, {anotado.nombre}.</h3>
-                  <p>Te anotamos para el {anotado.color}. Te escribimos cuando salga la primera tanda.</p>
-                  <p className="nota">Demo de portafolio: no se guardó ningún dato.</p>
-                </div>
+                <h3>Listo, {anotado.nombre}.</h3>
+                <p>Te anotamos para el {anotado.resumen}. Te escribimos cuando salga la primera tanda.</p>
+                <p className="nota">Demo de portafolio: no se guardó ningún dato.</p>
               </div>
             ) : (
               <form className="formulario" onSubmit={anotar} noValidate>
@@ -220,14 +235,8 @@ export default function App() {
                   Email o WhatsApp
                   <input name="contacto" autoComplete="email" />
                 </label>
-                <label>
-                  Color
-                  <select value={variante.id} onChange={(e) => setVariante(variantes.find((v) => v.id === e.target.value)!)}>
-                    {variantes.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
-                  </select>
-                </label>
                 {error && <p className="error" role="alert">{error}</p>}
-                <button className="boton">Anotarme en la lista</button>
+                <button className="boton">Anotarme con este diseño</button>
               </form>
             )}
           </div>
@@ -239,7 +248,8 @@ export default function App() {
           <p className="pie__marca"><span className="logo__sol" aria-hidden="true" /> Kuarahy</p>
           <p>
             Producto y marca ficticios, hechos como proyecto de portafolio por{' '}
-            <a href="https://github.com/williamzarza2003">William Zarza</a>. Ilustraciones en SVG propias.
+            <a href="https://github.com/williamzarza2003">William Zarza</a>. Modelo 3D, fotos y video hechos con
+            Blender y Remotion a partir del mismo modelo.
           </p>
         </div>
       </footer>

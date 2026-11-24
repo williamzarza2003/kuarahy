@@ -1,5 +1,5 @@
 export interface Variante {
-  id: string
+  id: 'lapacho' | 'siesta' | 'parana' | 'monte' | 'carbon'
   nombre: string
   nota: string
   base: string

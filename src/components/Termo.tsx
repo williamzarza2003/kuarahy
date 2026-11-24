@@ -54,6 +54,15 @@ export default function Termo({ variante, className = '', titulo }: Props) {
           <stop offset="0" style={{ stopColor: 'var(--t-base)' }} />
           <stop offset="1" style={{ stopColor: 'var(--t-sombra)' }} />
         </linearGradient>
+        {/* Las sombras de borde se recortan a la forma redondeada de cada pieza: sin esto,
+            sus esquinas rectas asomaban como rectángulos translúcidos (sobre todo en el hombro) */}
+        <clipPath id={g('forma-tapa')}><rect x="70" y="50" width="112" height="44" rx="12" /></clipPath>
+        <clipPath id={g('forma-cuerpo')}><rect x="50" y="114" width="152" height="356" rx="24" /></clipPath>
+        <clipPath id={g('forma-base')}><rect x="54" y="456" width="144" height="30" rx="12" /></clipPath>
+        <linearGradient id={g('hombro')} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="#000" stopOpacity=".22" />
+          <stop offset="1" stopColor="#000" stopOpacity="0" />
+        </linearGradient>
         <radialGradient id={g('piso')} cx=".5" cy=".5" r=".5">
           <stop offset="0" stopColor="#000" stopOpacity=".35" />
           <stop offset="1" stopColor="#000" stopOpacity="0" />
@@ -76,14 +85,15 @@ export default function Termo({ variante, className = '', titulo }: Props) {
       {/* tapa con pico vertedor */}
       <rect x="54" y="66" width="22" height="16" rx="5" fill={`url(#${g('acero')})`} />
       <rect x="70" y="50" width="112" height="44" rx="12" fill={`url(#${g('acero')})`} />
-      <rect x="70" y="86" width="112" height="6" fill="#000" opacity=".12" />
+      <rect x="70" y="86" width="112" height="8" fill="#000" opacity=".12" clipPath={`url(#${g('forma-tapa')})`} />
 
       {/* collar de acero */}
       <rect x="58" y="92" width="136" height="26" rx="6" fill={`url(#${g('acero')})`} />
 
       {/* cuerpo */}
       <rect x="50" y="114" width="152" height="356" rx="24" fill={`url(#${g('cuerpo')})`} />
-      <rect x="50" y="114" width="152" height="12" fill="#000" opacity=".14" />
+      {/* sombra suave que deja el collar sobre el hombro del cuerpo */}
+      <rect x="50" y="114" width="152" height="22" fill={`url(#${g('hombro')})`} clipPath={`url(#${g('forma-cuerpo')})`} />
       {/* brillo largo, como en el acero pintado */}
       <rect x="84" y="134" width="7" height="316" rx="3.5" fill="#fff" opacity=".28" />
 
@@ -102,7 +112,7 @@ export default function Termo({ variante, className = '', titulo }: Props) {
 
       {/* base de acero */}
       <rect x="54" y="456" width="144" height="30" rx="12" fill={`url(#${g('acero')})`} />
-      <rect x="54" y="456" width="144" height="5" fill="#000" opacity=".15" />
+      <rect x="54" y="456" width="144" height="5" fill="#000" opacity=".15" clipPath={`url(#${g('forma-base')})`} />
     </svg>
   )
 }

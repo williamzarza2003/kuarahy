@@ -12,7 +12,7 @@ export interface Termo3DProps {
   /** Giro alrededor del eje vertical, en grados */
   giro: number
   nombre?: string
-  tapa?: 'clasica' | 'pico'
+  tapa?: 'clasica' | 'pico' | 'mate'
   /** estudio: luz pareja · contraluz: silueta con borde de luz */
   luz?: 'estudio' | 'contraluz'
   camara: { distancia: number; altura: number; objetivo: number }
@@ -36,7 +36,7 @@ function dibujar(canvas: HTMLCanvasElement, nombre: string) {
   ctx.fillText(nombre, 700, 150 + tam * 0.04)
 }
 
-function Modelo({ color, giro, nombre = '', tapa = 'clasica' }: Termo3DProps) {
+function Modelo({ color, giro, nombre = '', tapa = 'pico' }: Termo3DProps) {
   const { scene } = useGLTF(MODELO, false, true)
   const mats = useMemo(() => {
     const canvas = document.createElement('canvas')
@@ -68,10 +68,10 @@ function Modelo({ color, giro, nombre = '', tapa = 'clasica' }: Termo3DProps) {
       if (a) a.visible = true
       if (b) b.visible = false
     }
-    const c = scene.getObjectByName('Tapa_Clasica')
-    const pico = scene.getObjectByName('Tapa_Pico')
-    if (c) c.visible = tapa === 'clasica'
-    if (pico) pico.visible = tapa === 'pico'
+    for (const [id, nodo] of [['clasica', 'Tapa_Clasica'], ['pico', 'Tapa_Pico'], ['mate', 'Tapa_Mate']] as const) {
+      const o = scene.getObjectByName(nodo)
+      if (o) o.visible = tapa === id
+    }
   }, [scene, mats, tapa])
 
   useLayoutEffect(() => {

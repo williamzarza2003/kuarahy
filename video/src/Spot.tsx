@@ -72,13 +72,13 @@ function Aparece() {
   const f = useCurrentFrame()
   const { width, height, u, vertical } = useMedidas()
   const giro = interpolate(f, [0, 150], [-160, 20], { ...sujetar, easing: Easing.inOut(Easing.cubic) })
-  const acerca = interpolate(f, [0, 150], [0.95, 0.72], { ...sujetar, easing: Easing.out(Easing.cubic) })
+  const acerca = interpolate(f, [0, 150], [1.06, 0.82], { ...sujetar, easing: Easing.out(Easing.cubic) })
   const brillo = interpolate(f, [0, 40], [0, 1], sujetar)
   return (
     <AbsoluteFill style={{ background: COLOR.noche, overflow: 'hidden' }}>
       <AbsoluteFill style={{ opacity: brillo, left: vertical ? 0 : width * 0.2 }}>
         <ThreeCanvas width={width} height={height} camera={{ fov: vertical ? 34 : 24 }} gl={{ toneMapping: 4, toneMappingExposure: 1.1 }}>
-          <Termo3D color="#e0518d" giro={giro} luz="contraluz" camara={{ distancia: acerca, altura: 0.12, objetivo: 0.13 }} />
+          <Termo3D color="#e0518d" giro={giro} luz="contraluz" camara={{ distancia: acerca, altura: 0.14, objetivo: 0.15 }} />
         </ThreeCanvas>
       </AbsoluteFill>
       <p style={{ position: 'absolute', left: 90 * u, bottom: (vertical ? 200 : 90) * u, margin: 0, color: '#c5d3da', fontFamily: FUENTE, fontWeight: 600, fontSize: 46 * u, opacity: interpolate(f, [70, 95], [0, 1], sujetar) }}>
@@ -124,7 +124,7 @@ function Hielo() {
     <AbsoluteFill style={{ background: COLOR.hielo, overflow: 'hidden' }}>
       <AbsoluteFill style={{ top: vertical ? height * 0.16 : 0 }}>
         <ThreeCanvas width={width} height={height} camera={{ fov: vertical ? 34 : 26 }} gl={{ toneMapping: 4 }}>
-          <Termo3D color="#1d6ea3" giro={-25 + f * 0.12} camara={{ distancia: 0.78, altura: 0.16, objetivo: 0.14 }} />
+          <Termo3D color="#1d6ea3" giro={-25 + f * 0.12} camara={{ distancia: 0.88, altura: 0.18, objetivo: 0.155 }} />
           {CUBOS.map((c, i) => <Cubo key={i} {...c} />)}
         </ThreeCanvas>
       </AbsoluteFill>
@@ -153,7 +153,7 @@ function Colores() {
     <AbsoluteFill style={{ background: v.fondo, overflow: 'hidden' }}>
       <AbsoluteFill style={{ top: vertical ? -height * 0.1 : 0, left: vertical ? 0 : width * 0.08 }}>
         <ThreeCanvas width={width} height={height} camera={{ fov: vertical ? 34 : 26 }} gl={{ toneMapping: 4 }}>
-          <Termo3D color={v.base} giro={-30 + f * 0.9} camara={{ distancia: 0.8 - golpe * 0.04, altura: 0.15, objetivo: 0.13 }} />
+          <Termo3D color={v.base} giro={-30 + f * 0.9} camara={{ distancia: 0.9 - golpe * 0.04, altura: 0.17, objetivo: 0.15 }} />
         </ThreeCanvas>
       </AbsoluteFill>
       {VARIANTES.map((_, k) => (
@@ -178,7 +178,7 @@ function Grabado({ nombre }: { nombre: string }) {
     <AbsoluteFill style={{ background: COLOR.noche2, overflow: 'hidden' }}>
       <AbsoluteFill style={{ left: vertical ? 0 : width * 0.22, top: vertical ? height * 0.24 : 0 }}>
       <ThreeCanvas width={width} height={height} camera={{ fov: vertical ? 26 : 18 }} gl={{ toneMapping: 4, toneMappingExposure: 1.1 }}>
-        <Termo3D color="#2a2d33" giro={-6 + f * 0.05} nombre={nombre.slice(0, letras)} camara={{ distancia: 0.34, altura: 0.085, objetivo: 0.075 }} />
+        <Termo3D color="#2a2d33" giro={-6 + f * 0.05} nombre={nombre.slice(0, letras)} camara={{ distancia: 0.34, altura: 0.1, objetivo: 0.092 }} />
       </ThreeCanvas>
       </AbsoluteFill>
       <div style={{ position: 'absolute', left: 90 * u, right: 90 * u, top: (vertical ? 180 : 90) * u, color: '#fff' }}>
@@ -200,7 +200,7 @@ function Cierre({ web }: { web: string }) {
       <div style={{ position: 'absolute', width: solTam, height: solTam, borderRadius: '50%', background: COLOR.solClaro, left: vertical ? width / 2 - solTam / 2 : width * 0.68 - solTam / 2, top: vertical ? height * 0.6 - solTam / 2 : height / 2 - solTam / 2 }} />
       <AbsoluteFill style={vertical ? { top: height * 0.22 } : { left: width * 0.2 }}>
         <ThreeCanvas width={width} height={height} camera={{ fov: vertical ? 30 : 26 }} gl={{ toneMapping: 4 }}>
-          <Termo3D color="#e0518d" giro={-24 + f * 0.15} camara={{ distancia: 0.78, altura: 0.15, objetivo: 0.13 }} />
+          <Termo3D color="#e0518d" giro={-24 + f * 0.15} camara={{ distancia: 0.88, altura: 0.17, objetivo: 0.15 }} />
         </ThreeCanvas>
       </AbsoluteFill>
       <div style={{ position: 'absolute', left: 90 * u, top: (vertical ? 170 : 0) * u, bottom: vertical ? undefined : 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', color: COLOR.tinta, maxWidth: vertical ? width - 180 * u : width * 0.5, opacity: entra, transform: `translateY(${(1 - entra) * 30 * u}px)` }}>

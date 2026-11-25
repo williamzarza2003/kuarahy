@@ -19,10 +19,18 @@ for (const archivo of (await readdir(origen)).filter((f) => f.endsWith('.png') &
   if (base.startsWith('estudio-')) {
     // Fondo transparente: la sombra de contacto se desvanece en óvalo hacia los bordes,
     // así no queda cortada en un rectángulo cuando la foto va sobre un color plano.
+    // Con el encuadre v3 la base del termo queda al 89 % del alto: la sombra se borra entre el 90 % y el
+    // borde de abajo (si no, termina en una línea recta), y un óvalo la apaga hacia los costados.
     const mascara = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-      <defs><radialGradient id="g" cx="50%" cy="56%" r="58%">
-        <stop offset="62%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/>
-      </radialGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>`)
+      <defs>
+        <radialGradient id="g" cx="50%" cy="50%" r="62%">
+          <stop offset="64%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="v" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="90%" stop-color="#fff" stop-opacity="1"/><stop offset="99%" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+        <mask id="m"><rect width="100%" height="100%" fill="url(#v)"/></mask>
+      </defs><rect width="100%" height="100%" fill="url(#g)" mask="url(#m)"/></svg>`)
     img = sharp(await img.composite([{ input: mascara, blend: 'dest-in' }]).png().toBuffer())
   }
   for (const ancho of anchos.filter((a) => a <= width || a === 640)) {

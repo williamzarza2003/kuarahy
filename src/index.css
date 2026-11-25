@@ -5,6 +5,18 @@
    únicos degradados son el sombreado del producto.
    ========================================================== */
 
+/* Respaldo con las métricas de Bricolage (medidas con fontTools): mientras carga la fuente, el título ocupa
+   lo mismo y la portada no salta. Antes el respaldo era Arial Black, un 14 % más ancho. */
+@font-face {
+  font-family: 'Bricolage respaldo';
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Arial');
+  font-weight: 700 800;
+  size-adjust: 100.8%;
+  ascent-override: 92.3%;
+  descent-override: 26.8%;
+  line-gap-override: 0%;
+}
+
 :root {
   --sol: #ff5f1f;
   --sol-oscuro: #c63d06;
@@ -18,7 +30,7 @@
   --claro: #eef5f7;
   --linea: #cfdde2;
 
-  --display: 'Bricolage Grotesque', 'Arial Black', system-ui, sans-serif;
+  --display: 'Bricolage Grotesque', 'Bricolage respaldo', 'Arial Black', system-ui, sans-serif;
   --texto: 'Figtree', 'Segoe UI', system-ui, sans-serif;
 
   font: 400 1.0625rem/1.6 var(--texto);

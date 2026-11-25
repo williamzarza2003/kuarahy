@@ -540,6 +540,9 @@ def escena_referencia(color, calidad, vista, tapa="pico", boca_abierta=False):
     luces_estudio()
     if vista == "arriba":
         camara((0.0, -0.45, 0.55), (0.0, 0, 0.2), lente=75)
+    elif tapa in ("clasica", "mate"):
+        # la tapa vaso es 4,5 cm más alta y la bombilla de la versión mate asoma otros 4: más aire arriba
+        camara((0.0, -0.96, 0.28), (0.008, 0, 0.17), lente=75)
     else:
         camara((0.0, -0.84, 0.25), (0.008 if vista != "perfil-manija" else 0.025, 0, 0.145), lente=75)
     if boca_abierta:

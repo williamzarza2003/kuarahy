@@ -3,7 +3,7 @@ import { aURL, desdeURL, INICIAL, limpiarNombre, precio } from '../../data/confi
 
 describe('personalizador', () => {
   it('el diseño va y vuelve por la URL', () => {
-    const c = { color: 'parana', nombre: 'Ña Rosa', tapa: 'pico', tamano: '15L' } as const
+    const c = { color: 'parana', nombre: 'Ña Rosa', tapa: 'mate', tamano: '15L' } as const
     expect(desdeURL(aURL(c))).toEqual(c)
   })
 
@@ -23,7 +23,8 @@ describe('personalizador', () => {
   it('el precio cambia con el tamaño, la tapa y el grabado', () => {
     expect(precio(INICIAL)).toBe(289_000)
     expect(precio({ ...INICIAL, tamano: '15L' })).toBe(339_000)
-    expect(precio({ ...INICIAL, tapa: 'pico', nombre: 'Ana' })).toBe(289_000 + 25_000 + 30_000)
+    expect(precio({ ...INICIAL, tapa: 'clasica' })).toBe(289_000)
+    expect(precio({ ...INICIAL, tapa: 'mate', nombre: 'Ana' })).toBe(289_000 + 35_000 + 30_000)
     expect(precio({ ...INICIAL, nombre: '   ' })).toBe(289_000)
   })
 })

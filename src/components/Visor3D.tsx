@@ -9,8 +9,8 @@ import { dibujarGrabado, fuenteLista } from '../lib/grabado.ts'
 
 const MODELO = '/modelos/kuarahy.glb'
 // Diferencia de altura entre el cuerpo de 1,5 L y el de 1 L (en metros, igual que en blender/termo.py)
-const SUBIDA_15L = 0.065
-const CENTRO = new THREE.Vector3(0, 0.128, 0)
+const SUBIDA_15L = 0.08
+const CENTRO = new THREE.Vector3(0, 0.15, 0)
 
 interface Props {
   config: Configuracion
@@ -78,6 +78,7 @@ function Termo({ config, onListo }: Pick<Props, 'config' | 'onListo'>) {
     }
     ver('Tapa_Clasica', config.tapa === 'clasica')
     ver('Tapa_Pico', config.tapa === 'pico')
+    ver('Tapa_Mate', config.tapa === 'mate')
     const sup = scene.getObjectByName('Superior')
     if (sup) sup.position.y = es15 ? SUBIDA_15L : 0
     invalidar()
@@ -123,7 +124,7 @@ function Giro({ giro }: Pick<Props, 'giro'>) {
   return null
 }
 
-/** Encuadre según el tamaño: el de 1,5 L es 6,5 cm más alto, así que la cámara sube y se aleja. */
+/** Encuadre según el tamaño: el de 1,5 L es 8 cm más alto, así que la cámara sube y se aleja. */
 function Encuadre({ tamano }: { tamano: Configuracion['tamano'] }) {
   const controles = useThree((s) => s.controls) as OrbitControlsImpl | null
   const camara = useThree((s) => s.camera)
@@ -132,7 +133,7 @@ function Encuadre({ tamano }: { tamano: Configuracion['tamano'] }) {
     if (!controles) return
     const es15 = tamano === '15L'
     const objetivo = CENTRO.clone().setY(CENTRO.y + (es15 ? SUBIDA_15L / 2 : 0))
-    const offset = camara.position.clone().sub(controles.target).setLength(es15 ? 0.86 : 0.75)
+    const offset = camara.position.clone().sub(controles.target).setLength(es15 ? 1.02 : 0.88)
     controles.target.copy(objetivo)
     camara.position.copy(objetivo).add(offset)
     controles.update()
@@ -150,7 +151,7 @@ export default function Visor3D({ config, giro, onListo }: Props) {
         frameloop="demand"
         dpr={[1, 2]}
         shadows={false}
-        camera={{ position: [0, 0.15, 0.74], fov: 30, near: 0.05, far: 10 }}
+        camera={{ position: [0, 0.17, 0.88], fov: 30, near: 0.05, far: 10 }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
         aria-hidden="true"
       >

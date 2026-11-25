@@ -1,15 +1,15 @@
 // Reseñas de ejemplo: el producto es ficticio y se aclara en la propia sección.
 const resenas = [
   { nombre: 'Rocío G.', lugar: 'Minga Guazú', estrellas: 5, texto: 'Lo llené a las seis para ir a la obra y a las cuatro de la tarde todavía hacía ruido el hielo. La manija aguanta el peso lleno sin doblarse.', diseno: 'Siesta · 1,5 L · pico' },
-  { nombre: 'Matías A.', lugar: 'Ciudad del Este', estrellas: 5, texto: 'Pedí el grabado con el nombre de mi papá para el Día del Padre. Quedó prolijo, no es un sticker: se siente el acero con la uña.', diseno: 'Carbón · 1 L · clásica' },
-  { nombre: 'Lorena V.', lugar: 'Hernandarias', estrellas: 4, texto: 'El pico cebador es lo mejor: servís con una mano y no se te moja la tapa. Le pondría una correa para colgarlo de la moto.', diseno: 'Lapacho · 1 L · pico' },
+  { nombre: 'Matías A.', lugar: 'Ciudad del Este', estrellas: 5, texto: 'Pedí el grabado con el nombre de mi papá para el Día del Padre. Quedó prolijo, no es un sticker: se siente el acero con la uña.', diseno: 'Carbón · 1 L · tapa vaso' },
+  { nombre: 'Lorena V.', lugar: 'Hernandarias', estrellas: 4, texto: 'El pico cebador es lo mejor: servís con una mano y no chorrea. Y con la argolla de arriba lo cuelgo de la moto.', diseno: 'Lapacho · 1 L · pico' },
 ]
 
 const preguntas = [
   { p: '¿Cuánto dura el hielo de verdad?', r: 'Lleno de hielo hasta el cuello, a la sombra y con 40° de máxima, quedan cubitos a las 24 horas. Al sol directo, calculá la mitad. Lo que más ayuda es enfriarlo antes con agua de la heladera.' },
   { p: '¿El grabado se borra?', r: 'No. Es grabado con láser: saca la pintura y deja el acero a la vista, así que no se despega ni se gasta con el lavado. Por eso no se puede cambiar después: revisá bien el nombre antes de pedirlo.' },
-  { p: '¿Puedo cambiar de tapa después?', r: 'Sí. Las dos tapas enroscan en el mismo collar, así que podés comprar la otra aparte y usar la que te convenga según el día.' },
-  { p: '¿Se puede lavar en el lavavajillas?', r: 'Mejor no: el calor del lavavajillas castiga la pintura y la goma. Con agua tibia, detergente y un cepillo largo alcanza; la boca de 8,5 cm deja entrar la mano.' },
+  { p: '¿Puedo cambiar de tapa después?', r: 'Sí. Las tres tapas (pico, vaso y mate) enroscan en el mismo cuello, así que podés comprar otra aparte y usar la que te convenga según el día.' },
+  { p: '¿Se puede lavar en el lavavajillas?', r: 'Mejor no: el calor del lavavajillas castiga la pintura y la goma. Con agua tibia, detergente y un cepillo largo alcanza: la boca ancha de 6,5 cm lo deja pasar sin problema.' },
   { p: '¿Hacen envíos?', r: 'Retiro en el microcentro de Ciudad del Este o envío a todo el país por encomienda. El costo se calcula al confirmar la compra.' },
 ]
 

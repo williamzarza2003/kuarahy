@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { variantes } from '../data/variantes.ts'
 import {
-  guaranies, limpiarNombre, MAX_NOMBRE, PRECIO_GRABADO, precio, tamanos, tapas, varianteDe, aURL,
+  fraseTapa, guaranies, limpiarNombre, MAX_NOMBRE, PRECIO_GRABADO, precio, tamanos, tapas, varianteDe, aURL,
   type Configuracion,
 } from '../data/configuracion.ts'
 import Render from './Render.tsx'
@@ -55,7 +55,7 @@ export default function Personalizador({ config, setConfig }: Props) {
     }
   }
 
-  const resumen = `${variante.nombre}, ${config.tamano === '15L' ? '1,5 L' : '1 L'}, tapa ${config.tapa === 'pico' ? 'con pico cebador' : 'clásica'}${config.nombre.trim() ? `, con «${config.nombre.trim()}» grabado` : ''}`
+  const resumen = `${variante.nombre}, ${config.tamano === '15L' ? '1,5 L' : '1 L'}, ${fraseTapa(config.tapa)}${config.nombre.trim() ? `, con «${config.nombre.trim()}» grabado` : ''}`
 
   return (
     <section id="hacelo" ref={seccion} className="hacelo" aria-labelledby="titulo-hacelo">

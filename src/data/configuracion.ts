@@ -7,8 +7,9 @@ export const tamanos = [
 ] as const
 
 export const tapas = [
-  { id: 'clasica', nombre: 'Clásica', detalle: 'Con asa plegable de acero', precio: 0 },
-  { id: 'pico', nombre: 'Pico cebador', detalle: 'Sirve de a poco, con una mano', precio: 25_000 },
+  { id: 'pico', nombre: 'Pico cebador', detalle: 'Tapita abatible: cebás con una mano. Se desenrosca entera para cargar hielo', precio: 0 },
+  { id: 'clasica', nombre: 'Tapa vaso', detalle: 'La de los termos de viaje: se desenrosca y te sirve de vaso', precio: 0 },
+  { id: 'mate', nombre: 'Versión mate', detalle: 'Tapa vaso con la bombilla guardada adentro', precio: 35_000 },
 ] as const
 
 export const PRECIO_GRABADO = 30_000
@@ -24,7 +25,12 @@ export interface Configuracion {
   tamano: TamanoId
 }
 
-export const INICIAL: Configuracion = { color: 'lapacho', nombre: '', tapa: 'clasica', tamano: '1L' }
+export const INICIAL: Configuracion = { color: 'lapacho', nombre: '', tapa: 'pico', tamano: '1L' }
+
+/** Cómo se nombra la tapa dentro de una frase: "tapa con pico cebador", "tapa vaso", "tapa mate" */
+export function fraseTapa(id: TapaId): string {
+  return id === 'pico' ? 'tapa con pico cebador' : id === 'clasica' ? 'tapa vaso' : 'tapa mate con bombilla'
+}
 
 /** Deja solo letras (con acentos y ñ), números, espacios, punto y guion; máximo 14 caracteres. */
 export function limpiarNombre(texto: string): string {

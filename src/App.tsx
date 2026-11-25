@@ -5,16 +5,17 @@ import Galeria from './components/Galeria.tsx'
 import VideoSpot from './components/VideoSpot.tsx'
 import Confianza from './components/Confianza.tsx'
 import Render from './components/Render.tsx'
-import { aURL, desdeURL, guaranies, precio, varianteDe, type Configuracion } from './data/configuracion.ts'
+import { aURL, desdeURL, fraseTapa, guaranies, precio, varianteDe, type Configuracion } from './data/configuracion.ts'
 
 const ficha = [
   { dato: 'Capacidad', valor: '1 L o 1,5 L', nota: 'Una ronda para cuatro, o la larga de la siesta' },
   { dato: 'Hielo', valor: '24 horas', nota: 'Con el termo lleno a la sombra, a 40°' },
   { dato: 'Agua fría', valor: '36 horas', nota: 'Debajo de 10° sin hielo extra' },
   { dato: 'Material', valor: 'Acero 304', nota: 'Doble pared al vacío, sin plástico en contacto con el agua' },
-  { dato: 'Boca', valor: '8,5 cm', nota: 'Entran los cubitos grandes de la heladera' },
-  { dato: 'Tapa', valor: 'Clásica o pico', nota: 'Con asa plegable, o con pico cebador para servir con una mano' },
-  { dato: 'Peso vacío', valor: '560 g', nota: 'Con manija lateral de agarre' },
+  { dato: 'Boca ancha', valor: '6,5 cm', nota: 'La tapa se desenrosca entera: entran los cubitos de la cubetera' },
+  { dato: 'Tapa', valor: 'Pico, vaso o mate', nota: 'Pico cebador con tapita abatible, tapa vaso, o versión mate con la bombilla guardada' },
+  { dato: 'Manija', valor: 'Para toda la mano', nota: 'Agarre de goma estriada y argolla de acero para colgarlo' },
+  { dato: 'Peso vacío', valor: '610 g', nota: 'El de 1 L, con manija y tapa de pico' },
   { dato: 'Garantía', valor: '2 años', nota: 'Si pierde el vacío, te damos otro' },
 ]
 
@@ -55,7 +56,7 @@ export default function App() {
     if (url !== `${location.pathname}${location.search}${location.hash}`) history.replaceState(null, '', url)
   }, [config])
 
-  const resumen = `${variante.nombre} de ${config.tamano === '15L' ? '1,5 L' : '1 L'}, tapa ${config.tapa === 'pico' ? 'con pico cebador' : 'clásica'}${config.nombre.trim() ? ` y «${config.nombre.trim()}» grabado` : ''}`
+  const resumen = `${variante.nombre} de ${config.tamano === '15L' ? '1,5 L' : '1 L'}, ${fraseTapa(config.tapa)}${config.nombre.trim() ? ` y «${config.nombre.trim()}» grabado` : ''}`
 
   const anotar = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -107,7 +108,7 @@ export default function App() {
           <div className="portada__producto">
             <Render
               nombre={`estudio-${config.color}`}
-              alt={`Termo Kuarahy color ${variante.nombre}, con manija lateral y tapa de acero`}
+              alt={`Termo Kuarahy color ${variante.nombre}, con manija de agarre de goma y tapa de acero con pico cebador`}
               className="portada__termo"
               sizes="(max-width: 900px) 70vw, 40vw"
               ancho={1200}

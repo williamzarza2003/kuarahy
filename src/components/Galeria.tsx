@@ -2,10 +2,10 @@ import { useRef, useState } from 'react'
 import Render from './Render.tsx'
 
 const fotos = [
-  { nombre: 'hero-lapacho', ancho: 1920, alto: 1200, alt: 'Termo Lapacho con gotas de condensación junto a una guampa de palo santo con yerba y hielo, sobre fondo naranja con luz dura de mediodía', pie: 'Lapacho, con la guampa cargada. Luz dura de mediodía.' },
-  { nombre: 'macro-grabado', ancho: 1600, alto: 1200, alt: 'Detalle del sol y la palabra KUARAHY grabados con láser sobre la pintura azul Paraná', pie: 'El sol y el nombre, grabados con láser: la pintura se va y queda el acero.' },
-  { nombre: 'macro-pico', ancho: 1600, alto: 1200, alt: 'Detalle de la tapa con pico cebador de acero y la tapita de goma abierta', pie: 'Tapa con pico cebador: sirve de a poco, con una mano.' },
-  { nombre: 'ambiente-monte', ancho: 1800, alto: 1200, alt: 'Termo verde Monte sobre una mesa de madera al aire libre con una guampa y yuyos', pie: 'Monte, en la mesa del patio.' },
+  { nombre: 'hero-lapacho', ancho: 1920, alto: 1200, alt: 'Termo Lapacho transpirando, con el pico cebador abierto, junto a una guampa de palo santo con yerba y bombilla, y cubitos de hielo sueltos sobre fondo naranja con luz dura de mediodía', pie: 'Lapacho transpirando al mediodía: el frío se nota afuera.' },
+  { nombre: 'macro-grabado', ancho: 1600, alto: 1200, alt: 'Detalle del sol y la palabra KUARAHY grabados con láser sobre la pintura azul Paraná, con el borde del corte a la vista', pie: 'El sol y el nombre, grabados con láser: la pintura se va y queda el acero, un poco más abajo.' },
+  { nombre: 'macro-pico', ancho: 1600, alto: 1200, alt: 'Detalle de la tapa de acero estriada con el pico cebador, la tapita de goma abierta y la bisagra con su perno', pie: 'Pico con labio cortagotas y tapita con bisagra: cebás con una mano y no chorrea.' },
+  { nombre: 'ambiente-monte', ancho: 1800, alto: 1200, alt: 'Termo verde Monte con la boca ancha abierta y cargada de hielo, la tapa con pico parada al lado y una guampa de palo santo, sobre una mesa de madera al aire libre', pie: 'Monte, con la boca ancha abierta: el hielo va en el termo.' },
   { nombre: 'estudio-carbon', ancho: 1200, alto: 1500, alt: 'Termo Kuarahy negro Carbón en estudio, con el grabado en acero', pie: 'Carbón: negro mate que no muestra la tierra colorada.' },
   { nombre: 'estudio-siesta', ancho: 1200, alto: 1500, alt: 'Termo Kuarahy naranja Siesta en estudio', pie: 'Siesta, el naranja de las tres de la tarde.' },
 ]

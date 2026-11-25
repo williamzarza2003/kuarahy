@@ -523,7 +523,8 @@ def escena_estudio(color, calidad, tapa="pico"):
     ciclorama("#e9e4de", captador=True)
     mundo_hdri("studio_small_09_1k.hdr", 0.35, rotacion=40, visible=False)
     luces_estudio()
-    camara((0.0, -0.98, 0.27), (0.008, 0, 0.152), lente=75)
+    # encuadre ajustado: el termo ocupa ~78 % del alto (en la portada va dentro de un círculo)
+    camara((0.0, -0.84, 0.23), (0.012, 0, 0.147), lente=75)
     return sc, f"estudio-{color}"
 
 

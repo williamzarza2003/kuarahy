@@ -231,7 +231,7 @@ picture img { display: block; width: 100%; height: auto; }
 .spot__grilla { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 3rem; align-items: center; }
 .spot__texto p { color: #c5d3da; font-size: 1.1rem; max-width: 34ch; }
 .spot__video { width: 100%; height: auto; border-radius: 20px; background: #000; display: block; }
-.spot__video--9x16 { max-height: 80svh; width: auto; justify-self: center; }
+.spot__video--9x16 { max-height: 80svh; width: auto; max-width: 100%; justify-self: center; }
 
 /* ---------- Comparación ---------- */
 .comparacion { padding: 7rem 0; background: var(--claro); }

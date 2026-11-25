@@ -6,9 +6,9 @@ Uso (desde la carpeta del repo):
   node blender/optimizar.mjs          # comprime con meshopt y deja todo en public/modelos/
 
 Sale:
-  blender/exports/kuarahy.glb                       todos los tamaños y tapas (visor 3D y video)
+  blender/exports/kuarahy.glb                       todos los tamaños y las tres tapas (visor 3D y video)
   blender/exports/kuarahy-<tamano>-<tapa>.glb       una combinación por archivo (realidad aumentada)
-  blender/exports/kuarahy-1L-clasica.usdz           Quick Look en iPhone, color Lapacho
+  blender/exports/kuarahy-1L-pico.usdz              Quick Look en iPhone, color Lapacho
 """
 import sys
 from pathlib import Path
@@ -41,8 +41,8 @@ def exportar_glb(destino):
 def ocultar_no_usadas(tamano, tapa):
     """Deja visible solo una combinación (para los archivos de realidad aumentada)."""
     otro_tam = "15L" if tamano == "1L" else "1L"
-    otra_tapa = "Tapa_Pico" if tapa == "clasica" else "Tapa_Clasica"
-    for nombre in (f"Cuerpo_{otro_tam}", f"Manija_{otro_tam}", f"Logo_{otro_tam}", f"Nombre_{otro_tam}", otra_tapa):
+    otras_tapas = [n for k, n in termo.TAPAS.items() if k != tapa]
+    for nombre in (f"Cuerpo_{otro_tam}", f"Manija_{otro_tam}", f"Logo_{otro_tam}", f"Nombre_{otro_tam}", *otras_tapas):
         ob = bpy.data.objects[nombre]
         for o in [ob, *ob.children_recursive]:
             o.hide_set(True)
@@ -59,19 +59,19 @@ def main():
 
     # 2) una combinación por archivo para la realidad aumentada
     for tamano in ("1L", "15L"):
-        for tapa in ("clasica", "pico"):
+        for tapa in termo.TAPAS:
             termo.limpiar_escena()
             termo.construir("#e0518d", para_web=True, ambos_tamanos=True)
             ocultar_no_usadas(tamano, tapa)
             exportar_glb(SALIDA / f"kuarahy-{tamano}-{tapa}.glb")
 
-    # 3) USDZ para Quick Look (iPhone): 1 L, tapa clásica, Lapacho
+    # 3) USDZ para Quick Look (iPhone): 1 L, pico cebador, Lapacho
     termo.limpiar_escena()
-    termo.construir("#e0518d", "1L", "clasica", para_web=True)
+    termo.construir("#e0518d", "1L", "pico", para_web=True)
     for o in bpy.data.objects:
         if o.hide_render:
             bpy.data.objects.remove(o, do_unlink=True)
-    destino = SALIDA / "kuarahy-1L-clasica.usdz"
+    destino = SALIDA / "kuarahy-1L-pico.usdz"
     try:
         bpy.ops.wm.usd_export(filepath=str(destino), export_materials=True, generate_preview_surface=True)
         print(f"USDZ {destino.name} {destino.stat().st_size / 1024:.0f} KB", flush=True)

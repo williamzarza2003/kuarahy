@@ -6,10 +6,14 @@ Uso (desde la carpeta del repo):
   blender -b --factory-startup --python blender/render.py -- --escena todas --calidad boceto
 
 Escenas:
-  estudio  fondo transparente con sombra de contacto, una por color (para la grilla de colores y el visor)
-  hero     el termo con la guampa, la bombilla, hielo y gotas de condensación, con luz dura de mediodía
-  macro    detalle del sol grabado y del pico cebador, con poca profundidad de campo
-  ambiente sobre una mesa de madera al aire libre, con hielo y yuyos (HDRI de Poly Haven, CC0)
+  estudio      fondo transparente con sombra de contacto, una por color (grilla de colores, visor, portada)
+  hero         el termo transpirando con el pico abierto, la guampa de palo santo y hielo suelto al lado
+  macro        detalle del sol grabado (con las paredes del corte) y del pico cebador
+  ambiente     mesa al aire libre: boca ancha abierta con hielo, la tapa al lado y la guampa (HDRI CC0)
+  referencias  renders limpios en fondo neutro, cada color y varios ángulos, para usar en Buzzy
+               (van a Projects/Audiovisual/editor-video/referencias-kuarahy)
+
+Reglas de utilería: el hielo va en el termo o al lado, nunca en la guampa ni junto a la bombilla.
 
 Calidad:
   boceto  mitad de resolución y 24 muestras (para revisar composición, segundos por imagen)
@@ -24,7 +28,7 @@ from pathlib import Path
 
 import bmesh
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import termo  # noqa: E402
@@ -185,65 +189,145 @@ def ciclorama(color, ancho=4.0, fondo=3.0, alto=2.0, radio=0.6, captador=False):
 
 
 # ---------------------------------------------------------------- utilería
-def guampa(mats, pos=(0, 0, 0), escala=1.0):
-    """Guampa de palo santo torneada, con virolas de acero arriba y abajo."""
-    madera = bpy.data.materials.new("PaloSanto")
-    if hasattr(madera, "use_nodes"):
-        madera.use_nodes = True
-    nt = madera.node_tree
+def material_palo_santo():
+    """Palo santo: verde oliva con vetas finas y oscuras que corren a lo largo de la pieza,
+    y laca satinada. Vetas con ondas (bandas) deformadas por ruido, para que no sean rayas perfectas."""
+    m = bpy.data.materials.new("PaloSanto")
+    if hasattr(m, "use_nodes"):
+        m.use_nodes = True
+    nt = m.node_tree
     b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
-    # veta fina y vertical: ruido estirado a lo alto, con poco contraste (el palo santo es parejo)
     coord = nt.nodes.new("ShaderNodeTexCoord")
     mapeo = nt.nodes.new("ShaderNodeMapping")
-    mapeo.inputs["Scale"].default_value = (45.0, 45.0, 3.0)
-    onda = nt.nodes.new("ShaderNodeTexNoise")
-    onda.inputs["Scale"].default_value = 1.0
-    onda.inputs["Detail"].default_value = 6.0
-    onda.inputs["Distortion"].default_value = 0.6
+    mapeo.inputs["Scale"].default_value = (90.0, 90.0, 2.2)          # vetas verticales y finas
+    ruido_d = nt.nodes.new("ShaderNodeTexNoise")
+    ruido_d.inputs["Scale"].default_value = 1.6
+    ruido_d.inputs["Detail"].default_value = 3.0
+    mezcla = nt.nodes.new("ShaderNodeVectorMath")
+    mezcla.operation = "ADD"
+    onda = nt.nodes.new("ShaderNodeTexWave")
+    onda.wave_type = "BANDS"
+    onda.bands_direction = "X"
+    onda.inputs["Scale"].default_value = 1.1
+    onda.inputs["Distortion"].default_value = 4.0
+    onda.inputs["Detail"].default_value = 3.0
+    onda.inputs["Detail Scale"].default_value = 1.4
     rampa = nt.nodes.new("ShaderNodeValToRGB")
-    rampa.color_ramp.elements[0].position = 0.3
-    rampa.color_ramp.elements[1].position = 0.72
-    rampa.color_ramp.elements[0].color = hex_lineal("#3a3418")
-    rampa.color_ramp.elements[1].color = hex_lineal("#82773f")
+    els = rampa.color_ramp.elements
+    els[0].position, els[0].color = 0.0, hex_lineal("#3a3519")
+    els[1].position, els[1].color = 0.4, hex_lineal("#5c5530")
+    e = els.new(0.85)
+    e.color = hex_lineal("#6f6638")
+    poros = nt.nodes.new("ShaderNodeTexNoise")                     # poro fino de la madera
+    poros.inputs["Scale"].default_value = 1400.0
+    rel = nt.nodes.new("ShaderNodeBump")
+    rel.inputs["Strength"].default_value = 0.12
     nt.links.new(coord.outputs["Object"], mapeo.inputs["Vector"])
-    nt.links.new(mapeo.outputs["Vector"], onda.inputs["Vector"])
-    nt.links.new(onda.outputs["Fac"], rampa.inputs["Fac"])
+    nt.links.new(mapeo.outputs["Vector"], ruido_d.inputs["Vector"])
+    nt.links.new(mapeo.outputs["Vector"], mezcla.inputs[0])
+    nt.links.new(ruido_d.outputs["Color"], mezcla.inputs[1])
+    nt.links.new(mezcla.outputs["Vector"], onda.inputs["Vector"])
+    # segunda veta, más fina y suave, mezclada encima: la madera no tiene rayas parejas
+    fina = nt.nodes.new("ShaderNodeTexWave")
+    fina.wave_type = "BANDS"
+    fina.bands_direction = "X"
+    fina.inputs["Scale"].default_value = 4.3
+    fina.inputs["Distortion"].default_value = 2.0
+    fina.inputs["Detail"].default_value = 2.0
+    suma = nt.nodes.new("ShaderNodeMix")
+    suma.data_type = "FLOAT"
+    suma.inputs["Factor"].default_value = 0.35
+    nt.links.new(mezcla.outputs["Vector"], fina.inputs["Vector"])
+    nt.links.new(onda.outputs["Fac"], suma.inputs["A"])
+    nt.links.new(fina.outputs["Fac"], suma.inputs["B"])
+    nt.links.new(suma.outputs["Result"], rampa.inputs["Fac"])
     nt.links.new(rampa.outputs["Color"], b.inputs["Base Color"])
-    b.inputs["Roughness"].default_value = 0.62
+    nt.links.new(poros.outputs["Fac"], rel.inputs["Height"])
+    nt.links.new(rel.outputs["Normal"], b.inputs["Normal"])
+    b.inputs["Roughness"].default_value = 0.42
     if "Coat Weight" in b.inputs:
-        b.inputs["Coat Weight"].default_value = 0.08
+        b.inputs["Coat Weight"].default_value = 0.35
+        b.inputs["Coat Roughness"].default_value = 0.25
+    return m
 
-    perfil = [(0, 0.0), (3.0, 0.0), (3.25, 0.25), (3.35, 1.0), (3.6, 5.0), (3.85, 9.2), (3.85, 9.6),
-              (3.45, 9.6), (3.3, 9.0), (3.05, 2.0), (0, 1.6)]
-    g = termo.revolucion("Guampa", perfil, madera)
-    for z0, z1, r0 in ((0.0, 1.1, 3.38), (8.6, 9.75, 3.92)):
-        v = termo.revolucion(f"Virola{z0}", [(r0 - 0.06, z0), (r0 + 0.05, z0 + 0.05), (r0 + 0.07, (z0 + z1) / 2),
-                                            (r0 + 0.05, z1 - 0.05), (r0 - 0.06, z1)], mats["acero"], angulo_filo=70)
+
+def material_yerba():
+    m = material_simple("Yerba", "#5d6b2c", 0.95)
+    nt = m.node_tree
+    b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
+    vor = nt.nodes.new("ShaderNodeTexVoronoi")                      # hojitas y palitos sueltos
+    vor.inputs["Scale"].default_value = 520.0
+    col = nt.nodes.new("ShaderNodeValToRGB")
+    col.color_ramp.elements[0].color = hex_lineal("#2f3a12")
+    col.color_ramp.elements[1].color = hex_lineal("#8f9a52")
+    e = col.color_ramp.elements.new(0.85)
+    e.color = hex_lineal("#c9c08a")                                 # palitos claros
+    rel = nt.nodes.new("ShaderNodeBump")
+    rel.inputs["Strength"].default_value = 0.9
+    nt.links.new(vor.outputs["Distance"], col.inputs["Fac"])
+    nt.links.new(col.outputs["Color"], b.inputs["Base Color"])
+    nt.links.new(vor.outputs["Distance"], rel.inputs["Height"])
+    nt.links.new(rel.outputs["Normal"], b.inputs["Normal"])
+    return m
+
+
+def guampa(mats, pos=(0, 0, 0), giro=0.0, con_bombilla=True):
+    """Guampa de palo santo torneada: panza suave, dos surcos de torno, virola de acero arriba
+    (con el labio enrollado sobre el borde) y abajo. Cargada de yerba en montañita, sin hielo."""
+    madera = material_palo_santo()
+    afuera = [(0, 0.0), (2.75, 0.0, 0.25), (3.0, 1.0, 0.3), (3.38, 4.2), (3.5, 8.0), (3.48, 9.2)]
+    adentro = [(3.02, 9.2, 0.15), (2.98, 6.0), (2.62, 1.2, 0.4), (0, 1.0)]
+    perfil = termo.filetear(afuera + adentro, 0.08, pasos=5)
+
+    def surcos(v):
+        r = math.hypot(v.co.x, v.co.y)
+        if r > 3.1:
+            for zc in (3.1, 3.5):
+                d = abs(v.co.z - zc)
+                if d < 0.09:
+                    k = (1 - d / 0.09) ** 2 * 0.05
+                    v.co.x *= (r - k) / r
+                    v.co.y *= (r - k) / r
+
+    g = termo.revolucion("Guampa", perfil, madera, deformar=surcos)
+    virola_sup = termo.revolucion("Guampa_VirolaSup", termo.filetear(
+        [(3.56, 8.45), (3.6, 8.55, 0.05), (3.6, 9.25, 0.06), (3.5, 9.45, 0.12), (3.1, 9.45, 0.1), (2.96, 9.2, 0.05),
+         (2.96, 8.9)], pasos=5), mats["acero"])
+    virola_inf = termo.revolucion("Guampa_VirolaInf", termo.filetear(
+        [(2.7, -0.02), (2.82, -0.02, 0.06), (3.08, 0.9, 0.05), (3.12, 1.05, 0.04), (3.02, 1.12)], pasos=4), mats["acero"])
+    for v in (virola_sup, virola_inf):
         v.parent = g
-    # la guampa cargada de yerba hasta casi el borde
-    yerba = material_simple("Yerba", "#5d6b2c", 0.95)
-    ynt = yerba.node_tree
-    yb = next(n for n in ynt.nodes if n.type == "BSDF_PRINCIPLED")
-    yr = ynt.nodes.new("ShaderNodeTexNoise")
-    yr.inputs["Scale"].default_value = 900.0
-    yr.inputs["Detail"].default_value = 8.0
-    yc = ynt.nodes.new("ShaderNodeValToRGB")
-    yc.color_ramp.elements[0].color = hex_lineal("#3e4a1a")
-    yc.color_ramp.elements[1].color = hex_lineal("#8f9a52")
-    ybump = ynt.nodes.new("ShaderNodeBump")
-    ybump.inputs["Strength"].default_value = 0.8
-    ynt.links.new(yr.outputs["Fac"], yc.inputs["Fac"])
-    ynt.links.new(yc.outputs["Color"], yb.inputs["Base Color"])
-    ynt.links.new(yr.outputs["Fac"], ybump.inputs["Height"])
-    ynt.links.new(ybump.outputs["Normal"], yb.inputs["Normal"])
-    y = termo.revolucion("Yerba", [(0, 8.75), (2.2, 8.65), (3.25, 8.45), (3.2, 8.2), (0, 8.2)], yerba)
-    y.parent = g
-    # bombilla de acero con el filtro adentro y la boquilla doblada
-    pts = [(0.6, 0.4, 2.2), (0.9, 0.5, 8.0), (1.1, 0.55, 13.0), (1.3, 0.6, 15.6), (2.2, 0.6, 16.6)]
-    bom = termo.tubo("Bombilla", [(cm(x), cm(y), cm(z)) for x, y, z in pts], cm(0.32), mats["acero"])
-    bom.parent = g
+    # yerba en montañita: alta contra un lado, baja donde entra la bombilla
+    random.seed(4)
+    bm = bmesh.new()
+    n_r, n_a = 10, 48
+
+    def zf(rr, a):
+        return (8.0 + 0.9 * (0.5 - 0.5 * math.cos(a - 2.6)) * (1 - (rr / 3.2) ** 2)
+                + 0.4 * (1 - (rr / 3.0) ** 2) + random.uniform(-0.05, 0.05))
+
+    centro = bm.verts.new((0, 0, zf(0, 0)))
+    filas = []
+    for i in range(1, n_r + 1):
+        rr = 2.95 * i / n_r
+        filas.append([bm.verts.new((rr * math.cos(math.tau * j / n_a), rr * math.sin(math.tau * j / n_a),
+                                    zf(rr, math.tau * j / n_a))) for j in range(n_a)])
+    for j in range(n_a):
+        bm.faces.new((centro, filas[0][j], filas[0][(j + 1) % n_a]))
+    for i in range(n_r - 1):
+        for j in range(n_a):
+            bm.faces.new((filas[i][j], filas[i + 1][j], filas[i + 1][(j + 1) % n_a], filas[i][(j + 1) % n_a]))
+    for v in bm.verts:
+        v.co *= 0.01
+    yerba = termo.malla_a_objeto("Yerba", bm, material_yerba(), angulo_filo=89)
+    yerba.parent = g
+    if con_bombilla:
+        bom = termo.bombilla("Bombilla", mats["acero"], largo=17.0)
+        bom.rotation_euler = (math.radians(-11), 0, math.radians(-110))
+        bom.location = (cm(-0.9), cm(0.5), cm(1.6))
+        bom.parent = g
     g.location = Vector(pos)
-    g.scale = (escala, escala, escala)
+    g.rotation_euler.z = math.radians(giro)
     return g
 
 
@@ -253,41 +337,59 @@ def hielo_material():
         m.use_nodes = True
     nt = m.node_tree
     b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
-    b.inputs["Base Color"].default_value = hex_lineal("#eaf8ff")
-    b.inputs["Roughness"].default_value = 0.08
+    b.inputs["Base Color"].default_value = hex_lineal("#eef9ff")
+    b.inputs["Roughness"].default_value = 0.06
     b.inputs["IOR"].default_value = 1.31
     for k in ("Transmission Weight", "Transmission"):
         if k in b.inputs:
             b.inputs[k].default_value = 1.0
     ruido = nt.nodes.new("ShaderNodeTexNoise")
-    ruido.inputs["Scale"].default_value = 60.0
+    ruido.inputs["Scale"].default_value = 55.0
+    ruido.inputs["Detail"].default_value = 4.0
     rel = nt.nodes.new("ShaderNodeBump")
-    rel.inputs["Strength"].default_value = 0.25
+    rel.inputs["Strength"].default_value = 0.3
     nt.links.new(ruido.outputs["Fac"], rel.inputs["Height"])
     nt.links.new(rel.outputs["Normal"], b.inputs["Normal"])
     return m
 
 
-def cubos_hielo(n, centro, dispersion, lado=2.2, semilla=7, altura=0.0):
+def cubos_hielo(posiciones, lado=2.2, semilla=7):
+    """Cubitos de hielo de máquina (con un hueco de un lado), apenas derretidos. posiciones en metros."""
     random.seed(semilla)
     mat = hielo_material()
     obs = []
-    for i in range(n):
+    for i, p in enumerate(posiciones):
         bm = bmesh.new()
-        bmesh.ops.create_cube(bm, size=cm(lado * random.uniform(0.8, 1.1)))
-        bmesh.ops.bevel(bm, geom=bm.edges[:], offset=cm(0.35), segments=3, affect="EDGES")
-        for v in bm.verts:  # derretido: apenas irregular
-            v.co *= 1 + random.uniform(-0.04, 0.04)
+        tam = lado * random.uniform(0.85, 1.08)
+        bmesh.ops.create_cube(bm, size=cm(tam))
+        bmesh.ops.bevel(bm, geom=bm.edges[:], offset=cm(0.32), segments=3, affect="EDGES")
+        for v in bm.verts:
+            v.co *= 1 + random.uniform(-0.035, 0.035)
+            if v.co.z > cm(tam * 0.3):                 # el hueco de la cubetera
+                v.co.z -= cm(0.25) * (1 - min(1, Vector((v.co.x, v.co.y)).length / cm(tam * 0.45)))
         ob = termo.malla_a_objeto(f"Hielo{i}", bm, mat, angulo_filo=70)
-        ob.location = Vector(centro) + Vector((random.uniform(-dispersion, dispersion),
-                                               random.uniform(-dispersion, dispersion), altura + cm(lado * 0.42)))
-        ob.rotation_euler = (random.uniform(-0.3, 0.3), random.uniform(-0.3, 0.3), random.uniform(0, math.tau))
+        ob.location = Vector(p)
+        ob.rotation_euler = (random.uniform(-0.25, 0.25), random.uniform(-0.25, 0.25), random.uniform(0, math.tau))
         obs.append(ob)
     return obs
 
 
-def gotas(alto, pintura, cantidad=900, semilla=3):
-    """Gotas de condensación sobre el frente del cuerpo.
+def hielo_en_termo(alto, cantidad=7, semilla=12):
+    """Cubitos asomando por la boca ancha: el hielo va en el termo, no en la guampa."""
+    random.seed(semilla)
+    z0 = alto + 0.78 + 1.62 - 0.9
+    pos = []
+    for k in range(cantidad):
+        a = math.tau * k / cantidad + random.uniform(-0.2, 0.2)
+        r = 1.6 if k < cantidad - 2 else random.uniform(0, 0.6)
+        # los del medio asoman por encima del borde: se ven desde la altura de una mesa
+        dz = random.uniform(-0.5, 0.2) + (1.5 if k >= cantidad - 2 else 0.4)
+        pos.append((cm(r * math.cos(a)), cm(r * math.sin(a)), cm(z0 + dz)))
+    return cubos_hielo(pos, lado=2.0, semilla=semilla)
+
+
+def gotas(alto, pintura, cantidad=1100, semilla=3):
+    """Condensación sobre el frente y la izquierda del cuerpo (la manija queda seca: ahí va la mano).
     Material: la misma pintura del termo, "mojada" (brillo y laca a pleno). Como agua con transmisión,
     a esta escala la luz quedaba atrapada y las gotas salían como puntos negros."""
     random.seed(semilla)
@@ -295,29 +397,32 @@ def gotas(alto, pintura, cantidad=900, semilla=3):
     agua.name = "PinturaMojada"
     nt = agua.node_tree
     b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
-    for enlace in list(b.inputs["Normal"].links):
+    for enlace in list(b.inputs["Normal"].links) + list(b.inputs["Roughness"].links):
         nt.links.remove(enlace)
-    b.inputs["Roughness"].default_value = 0.04
+    b.inputs["Roughness"].default_value = 0.03
     b.inputs["Coat Weight"].default_value = 1.0
     b.inputs["Coat Roughness"].default_value = 0.01
     b.inputs["Specular IOR Level"].default_value = 0.8
     bm = bmesh.new()
-    for _ in range(cantidad):
-        ang = random.uniform(-1.9, 1.3)             # sobre todo al frente y a la izquierda (no detrás de la manija)
-        z = random.uniform(1.8, alto - 2.8)
-        r = random.choice((0.025, 0.035, 0.035, 0.05, 0.05, 0.07, 0.1)) * random.uniform(0.8, 1.2)
+    for i in range(cantidad):
+        ang = random.uniform(-2.2, 1.2)
+        z = random.uniform(2.2, alto - 5.2)
+        grande = i % 23 == 0                       # algunas gotas gordas que ya empezaron a correr
+        r = (random.uniform(0.12, 0.16) if grande else
+             random.choice((0.022, 0.03, 0.03, 0.04, 0.05, 0.06, 0.08))) * random.uniform(0.85, 1.15)
         tmp = bmesh.new()
         bmesh.ops.create_uvsphere(tmp, u_segments=12, v_segments=8, radius=cm(r))
-        # media esfera abierta (sin base): la base queda hundida en la pintura
         bmesh.ops.delete(tmp, geom=[v for v in tmp.verts if v.co.y > cm(r) * 0.2], context="VERTS")
         for v in tmp.verts:
-            v.co.y *= 0.6                           # achatada contra la pared
+            v.co.y *= 0.55
+            if grande and v.co.z < 0:
+                v.co.z *= 1.8                    # gota cayendo: más larga abajo
         bmesh.ops.recalc_face_normals(tmp, faces=tmp.faces)
+        rc = termo.r_cuerpo(z, alto)
         c = Vector((math.sin(ang), -math.cos(ang), 0))
         rot = Vector((0, -1, 0)).rotation_difference(c)
         for v in tmp.verts:
-            # la base queda hundida en la pintura: sin capa de aire debajo, la gota no se ve oscura
-            v.co = rot @ v.co + c * cm(termo.R - r * 0.12) + Vector((0, 0, cm(z)))
+            v.co = rot @ v.co + c * cm(rc - r * 0.12) + Vector((0, 0, cm(z)))
         me = bpy.data.meshes.new("g")
         tmp.to_mesh(me)
         tmp.free()
@@ -337,11 +442,11 @@ def mesa_madera():
     onda.inputs["Distortion"].default_value = 9.0
     onda.inputs["Detail"].default_value = 4.0
     rampa = nt.nodes.new("ShaderNodeValToRGB")
-    rampa.color_ramp.elements[0].color = hex_lineal("#6b3f22")
-    rampa.color_ramp.elements[1].color = hex_lineal("#b07a4b")
+    rampa.color_ramp.elements[0].color = hex_lineal("#5a3420")
+    rampa.color_ramp.elements[1].color = hex_lineal("#a5703f")
     nt.links.new(onda.outputs["Fac"], rampa.inputs["Fac"])
     nt.links.new(rampa.outputs["Color"], b.inputs["Base Color"])
-    b.inputs["Roughness"].default_value = 0.62
+    b.inputs["Roughness"].default_value = 0.66
     tablas = []
     for i in range(-5, 6):
         bm = bmesh.new()
@@ -356,21 +461,21 @@ def mesa_madera():
 
 
 def yuyos(centro, semilla=11, ramitos=4):
-    """Ramitos de menta y cedrón: tallo y hojas simples, para el fondo desenfocado."""
+    """Ramitos de menta'i y cedrón: tallo y hojas simples, para el fondo desenfocado."""
     random.seed(semilla)
     hoja_mat = material_simple("Hoja", "#3f7a2e", 0.45)
     b = next(n for n in hoja_mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
-    for k in ("Subsurface Weight",):
-        if k in b.inputs:
-            b.inputs[k].default_value = 0.2
+    if "Subsurface Weight" in b.inputs:
+        b.inputs["Subsurface Weight"].default_value = 0.2
     obs = []
     for r in range(ramitos):
         bm = bmesh.new()
         base = Vector(centro) + Vector((random.uniform(-0.08, 0.08), random.uniform(-0.05, 0.05), cm(0.3)))
         direc = Vector((random.uniform(-1, 1), random.uniform(-1, 1), 0)).normalized()
         largo = random.uniform(0.12, 0.18)
-        tallo = [base + direc * largo * t + Vector((0, 0, cm(0.25))) for t in (0, 0.5, 1)]
-        tl = termo.tubo(f"Tallo{r}", [tuple(p) for p in tallo], cm(0.12), hoja_mat)
+        tallo = [(base + direc * largo * t + Vector((0, 0, cm(0.25)))) * 100 for t in (0, 0.5, 1)]
+        tl = termo.barrido(f"Tallo{r}", termo.catmull(tallo, 6), termo.ovalo(0.12, 0.12, 8), hoja_mat,
+                           arriba=Vector((0, 0, 1)))
         obs.append(tl)
         for i in range(5):
             t = (i + 1) / 6
@@ -388,41 +493,97 @@ def yuyos(centro, semilla=11, ramitos=4):
     return obs
 
 
+def tapa_en_la_mesa(nombre, pos, giro=0.0):
+    """Saca una tapa del termo y la deja parada sobre la mesa (para mostrar la boca ancha abierta)."""
+    tapa = bpy.data.objects[nombre]
+    termo.ocultar(tapa, False)
+    bpy.context.view_layer.update()
+    mundo = tapa.matrix_world.copy()
+    tapa.parent = None
+    base_z = cm(termo.ALTURAS["1L"] + 0.82)
+    tapa.matrix_world = Matrix.Translation(Vector(pos)) @ Matrix.Rotation(math.radians(giro), 4, "Z") \
+        @ Matrix.Translation((0, 0, -base_z)) @ Matrix.Translation(-mundo.translation) @ mundo
+    return tapa
+
+
 # ---------------------------------------------------------------- escenas
-def escena_estudio(color, calidad, tapa="clasica"):
+def luces_estudio(alto_obj=0.15):
+    luz_area("Clave", (-0.6, -0.6, 0.75), (0, 0, alto_obj), 34, (0.7, 1.1))
+    luz_area("Recorte", (0.62, 0.48, 0.6), (0, 0, alto_obj + 0.02), 30, (0.25, 1.0))
+    luz_area("Relleno", (0.75, -0.65, 0.22), (0, 0, alto_obj), 7, (1.2, 1.2))
+    luz_area("Techo", (0.0, 0.0, 0.95), (0, 0, 0.2), 10, (0.8, 0.8))
+
+
+def escena_estudio(color, calidad, tapa="pico"):
+    """Fondo transparente con sombra de contacto: la grilla de colores, el visor y la portada."""
     termo.limpiar_escena()
-    sc = preparar(1200, 1500, calidad, transparente=True, exposicion=-1.1, fiel=True)
+    sc = preparar(1200, 1500, calidad, transparente=True, exposicion=-1.15, fiel=True)
     raiz, mats = termo.construir(termo.VARIANTES[color], "1L", tapa)
-    raiz.rotation_euler.z = math.radians(-20)
+    raiz.rotation_euler.z = math.radians(-16)
     ciclorama("#e9e4de", captador=True)
     mundo_hdri("studio_small_09_1k.hdr", 0.35, rotacion=40, visible=False)
-    luz_area("Clave", (-0.55, -0.55, 0.65), (0, 0, 0.12), 32, (0.6, 0.9))
-    luz_area("Recorte", (0.6, 0.45, 0.45), (0, 0, 0.14), 26, (0.25, 0.9))
-    luz_area("Relleno", (0.7, -0.6, 0.15), (0, 0, 0.12), 6, (1.2, 1.2))
-    camara((0.0, -0.78, 0.22), (0, 0, 0.128), lente=72)
+    luces_estudio()
+    camara((0.0, -0.98, 0.27), (0.008, 0, 0.152), lente=75)
     return sc, f"estudio-{color}"
 
 
-def escena_hero(calidad, color="lapacho"):
+def escena_referencia(color, calidad, vista, tapa="pico", boca_abierta=False):
+    """Referencias limpias para Buzzy: fondo gris neutro, luz pareja, varios ángulos y colores."""
     termo.limpiar_escena()
-    sc = preparar(1920, 1200, calidad, exposicion=-0.25)
-    raiz, mats = termo.construir(termo.VARIANTES[color], "1L", "clasica")
-    raiz.rotation_euler.z = math.radians(-24)
+    sc = preparar(1200, 1500, calidad, exposicion=-1.75, fiel=True)
+    raiz, mats = termo.construir(termo.VARIANTES[color], "1L", tapa, boca_abierta=boca_abierta)
+    giros = {"frente": 0, "tres-cuartos": -32, "perfil-manija": -90, "atras": 145, "arriba": -25}
+    raiz.rotation_euler.z = math.radians(giros[vista])
+    ciclorama("#d7d4cf")
+    mundo_hdri("studio_small_09_1k.hdr", 0.45, rotacion=40, visible=False)
+    luces_estudio()
+    if vista == "arriba":
+        camara((0.0, -0.45, 0.55), (0.0, 0, 0.2), lente=75)
+    else:
+        camara((0.0, -0.84, 0.25), (0.008 if vista != "perfil-manija" else 0.025, 0, 0.145), lente=75)
+    if boca_abierta:
+        hielo_en_termo(termo.ALTURAS["1L"])
+    nombre = f"ref-{color}-{vista}" + (f"-{tapa}" if tapa != "pico" else "") + ("-boca-abierta" if boca_abierta else "")
+    return sc, nombre
+
+
+def escena_referencia_guampa(calidad):
+    """Guampa y bombilla solas, con la bombilla afuera para que se vea el filtro."""
+    termo.limpiar_escena()
+    sc = preparar(1500, 1200, calidad, exposicion=-1.75, fiel=True)
+    mats = termo.materiales("#e0518d")
+    g = guampa(mats, pos=(0.0, 0.03, 0), giro=20, con_bombilla=False)
+    # la bombilla acostada adelante, de izquierda a derecha: el filtro a la izquierda, el pico a la derecha
+    bom = termo.bombilla("BombillaSuelta", mats["acero"], largo=17.0)
+    bom.rotation_euler = (math.radians(90), 0, math.radians(80))
+    bom.location = (-0.07, -0.05, cm(0.62))
+    ciclorama("#d7d4cf")
+    mundo_hdri("studio_small_09_1k.hdr", 0.45, rotacion=40, visible=False)
+    luces_estudio(0.05)
+    camara((0.025, -0.46, 0.26), (0.025, -0.02, 0.035), lente=58)
+    return sc, "ref-guampa-y-bombilla"
+
+
+def escena_hero(calidad, color="lapacho"):
+    """Mediodía de enero: el termo transpirando, el pico abierto, la guampa al lado y hielo suelto
+    cerca del termo (no en la guampa)."""
+    termo.limpiar_escena()
+    sc = preparar(1920, 1200, calidad, exposicion=-0.3)
+    raiz, mats = termo.construir(termo.VARIANTES[color], "1L", "pico")
+    raiz.rotation_euler.z = math.radians(-22)
     gotas(termo.ALTURAS["1L"], mats["pintura"]).parent = raiz
     ciclorama("#ff5f1f")
-    g = guampa(mats, pos=(0.118, -0.085, 0))
-    g.rotation_euler.z = math.radians(30)
-    cubos_hielo(2, (0.118, -0.085, cm(8.9)), cm(0.9), lado=1.7, altura=0, semilla=2)
-    cubos_hielo(3, (-0.085, -0.115, 0), cm(2.8), lado=2.4, semilla=21)
+    guampa(mats, pos=(0.135, -0.09, 0), giro=200)
+    cubos_hielo([(-0.098, -0.105, cm(0.95)), (-0.072, -0.135, cm(0.9)), (-0.118, -0.075, cm(0.92))], lado=2.0, semilla=21)
     mundo_hdri("studio_small_09_1k.hdr", 0.35, rotacion=120, visible=False)
-    luz_sol(5.0, elevacion=62, azimut=-40, angulo=0.8)     # mediodía: luz dura desde arriba a la izquierda
-    luz_area("Rebote", (0.4, -0.7, 0.1), (0.05, 0, 0.12), 18, (1.5, 1.0), color=(1.0, 0.85, 0.75))
-    camara((0.05, -0.78, 0.2), (0.03, 0, 0.122), lente=52)
+    luz_sol(5.0, elevacion=60, azimut=-40, angulo=0.9)
+    luz_area("Rebote", (0.4, -0.7, 0.12), (0.05, 0, 0.14), 18, (1.5, 1.0), color=(1.0, 0.85, 0.75))
+    camara((0.04, -0.92, 0.23), (0.03, 0, 0.142), lente=52)
     return sc, f"hero-{color}"
 
 
 def escena_macro(calidad, color="parana", detalle="grabado"):
-    """Dos detalles: el sol grabado con luz rasante, y la tapa con pico cebador."""
+    """Dos detalles: el sol grabado con luz rasante (se ven las paredes del corte) y el pico cebador."""
     termo.limpiar_escena()
     sc = preparar(1600, 1200, calidad, exposicion=-0.3)
     raiz, mats = termo.construir(termo.VARIANTES[color], "1L", "pico")
@@ -430,70 +591,95 @@ def escena_macro(calidad, color="parana", detalle="grabado"):
     mundo_hdri("studio_small_09_1k.hdr", 0.8, rotacion=200, visible=False)
     foco = bpy.data.objects.new("Foco", None)
     bpy.context.scene.collection.objects.link(foco)
+    zs = termo.z_sol(termo.ALTURAS["1L"])
     if detalle == "grabado":
-        raiz.rotation_euler.z = math.radians(12)
-        luz_area("Rasante", (-0.32, -0.12, 0.14), (0, 0, 0.11), 22, (0.08, 0.5))   # luz rasante: marca el grabado
-        luz_area("Recorte", (0.3, 0.2, 0.3), (0, 0, 0.12), 25, (0.15, 0.6))
-        luz_area("Relleno", (0.1, -0.5, 0.15), (0, 0, 0.11), 4, (0.8, 0.8))
-        foco.location = (cm(-1.0), cm(-5.0), cm(12.0))
-        camara((-0.03, -0.30, 0.13), (cm(-1.0), 0, cm(10.9)), lente=100, desenfoque=(foco, 3.5))
+        raiz.rotation_euler.z = math.radians(10)
+        luz_area("Rasante", (-0.32, -0.12, cm(zs + 3)), (0, 0, cm(zs - 1)), 22, (0.08, 0.5))
+        luz_area("Recorte", (0.3, 0.2, 0.3), (0, 0, 0.14), 25, (0.15, 0.6))
+        luz_area("Relleno", (0.1, -0.5, 0.15), (0, 0, 0.13), 4, (0.8, 0.8))
+        foco.location = (cm(-0.8), cm(-4.7), cm(zs - 1.2))
+        camara((-0.03, -0.30, cm(zs + 1.5)), (cm(-0.8), 0, cm(zs - 1.3)), lente=100, desenfoque=(foco, 3.5))
     else:
-        raiz.rotation_euler.z = math.radians(-35)
-        luz_area("Clave", (-0.3, -0.25, 0.45), (0, 0, 0.23), 14, (0.3, 0.3))
-        luz_area("Recorte", (0.25, 0.3, 0.35), (0, 0, 0.23), 30, (0.15, 0.5))
-        foco.location = (cm(-2.6), cm(-1.0), cm(23.4))
-        camara((-0.13, -0.26, 0.33), (cm(-1.2), 0, cm(22.0)), lente=100, desenfoque=(foco, 4.0))
+        raiz.rotation_euler.z = math.radians(-20)
+        top = termo.ALTURAS["1L"] + 3.7
+        luz_area("Clave", (-0.3, -0.25, cm(top + 22)), (0, 0, cm(top)), 14, (0.3, 0.3))
+        luz_area("Recorte", (0.25, 0.3, cm(top + 15)), (0, 0, cm(top)), 30, (0.15, 0.5))
+        foco.location = (cm(-1.9), cm(-0.4), cm(top + 0.6))
+        camara((-0.17, -0.22, cm(top + 11)), (cm(-1.0), 0, cm(top - 0.2)), lente=100, desenfoque=(foco, 4.5))
     return sc, f"macro-{detalle}"
 
 
 def escena_ambiente(calidad, color="monte"):
+    """Mesa al aire libre: el termo con la boca ancha abierta y cargado de hielo, la tapa al lado,
+    la guampa con la bombilla y yuyos desenfocados."""
     termo.limpiar_escena()
-    sc = preparar(1800, 1200, calidad, exposicion=0.15)
+    sc = preparar(1800, 1200, calidad, exposicion=0.1)
     random.seed(5)
-    raiz, mats = termo.construir(termo.VARIANTES[color], "1L", "clasica")
-    raiz.rotation_euler.z = math.radians(-24)
-    gotas(termo.ALTURAS["1L"], mats["pintura"], cantidad=180).parent = raiz
+    raiz, mats = termo.construir(termo.VARIANTES[color], "1L", "pico", boca_abierta=True)
+    raiz.rotation_euler.z = math.radians(-26)
+    gotas(termo.ALTURAS["1L"], mats["pintura"], cantidad=420).parent = raiz
+    hielo_en_termo(termo.ALTURAS["1L"])
+    tapa_en_la_mesa("Tapa_Pico", (-0.115, -0.05, 0), giro=70)
     mesa_madera()
-    g = guampa(mats, pos=(0.15, -0.02, 0))
-    g.rotation_euler.z = math.radians(-20)
-    cubos_hielo(2, (0.15, -0.02, cm(8.9)), cm(0.8), lado=1.7, semilla=6)   # el hielo va en la guampa
-    yuyos((-0.16, 0.06, 0), ramitos=3)
-    yuyos((0.26, 0.04, 0), semilla=31, ramitos=2)
+    guampa(mats, pos=(0.15, -0.03, 0), giro=160)
+    yuyos((-0.18, 0.08, 0), ramitos=3)
+    yuyos((0.28, 0.05, 0), semilla=31, ramitos=2)
     mundo_hdri("noon_grass_2k.hdr", 1.0, rotacion=60, visible=True)
     foco = bpy.data.objects.new("Foco", None)
     bpy.context.scene.collection.objects.link(foco)
-    foco.location = (0, -cm(5), cm(11))
-    camara((0.12, -0.85, 0.3), (0.02, 0, 0.12), lente=60, desenfoque=(foco, 3.2))
+    foco.location = (0, -cm(5), cm(13))
+    camara((0.12, -0.95, 0.36), (0.02, 0, 0.13), lente=60, desenfoque=(foco, 3.2))
     return sc, f"ambiente-{color}"
 
 
-def renderizar(sc, nombre, calidad):
-    SALIDA.mkdir(exist_ok=True)
-    destino = SALIDA / f"{nombre}{'-boceto' if calidad == 'boceto' else ''}.png"
+def renderizar(sc, nombre, calidad, carpeta=None):
+    destino_dir = carpeta or SALIDA
+    destino_dir.mkdir(parents=True, exist_ok=True)
+    destino = destino_dir / f"{nombre}{'-boceto' if calidad == 'boceto' else ''}.png"
     sc.render.filepath = str(destino)
     t = time.time()
     bpy.ops.render.render(write_still=True)
     print(f"RENDER {destino.name} {time.time() - t:.1f}s", flush=True)
 
 
+REFERENCIAS = AQUI.parent.parent.parent.parent / "Audiovisual" / "editor-video" / "referencias-kuarahy"
+
+
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     p = argparse.ArgumentParser()
-    p.add_argument("--escena", default="todas", choices=["estudio", "hero", "macro", "ambiente", "todas"])
+    p.add_argument("--escena", default="todas",
+                   choices=["estudio", "hero", "macro", "ambiente", "referencias", "todas"])
     p.add_argument("--color", default="todos", choices=["todos", *termo.VARIANTES])
     p.add_argument("--calidad", default="boceto", choices=list(CALIDADES))
+    p.add_argument("--muestras", type=int, default=0, help="pisa las muestras de la calidad elegida")
     a = p.parse_args(argv)
     colores = list(termo.VARIANTES) if a.color == "todos" else [a.color]
+
+    def r(escena, carpeta=None):
+        sc, nombre = escena
+        if a.muestras:
+            sc.cycles.samples = a.muestras
+        renderizar(sc, nombre, a.calidad, carpeta)
+
     if a.escena in ("hero", "todas"):
-        renderizar(*escena_hero(a.calidad), a.calidad)
+        r(escena_hero(a.calidad))
     if a.escena in ("macro", "todas"):
-        renderizar(*escena_macro(a.calidad, detalle="grabado"), a.calidad)
-        renderizar(*escena_macro(a.calidad, detalle="pico"), a.calidad)
+        r(escena_macro(a.calidad, detalle="grabado"))
+        r(escena_macro(a.calidad, detalle="pico"))
     if a.escena in ("ambiente", "todas"):
-        renderizar(*escena_ambiente(a.calidad), a.calidad)
+        r(escena_ambiente(a.calidad))
     if a.escena in ("estudio", "todas"):
         for c in colores:
-            renderizar(*escena_estudio(c, a.calidad), a.calidad)
+            r(escena_estudio(c, a.calidad))
+    if a.escena == "referencias":
+        for c in colores:
+            for vista in ("frente", "tres-cuartos", "perfil-manija", "atras", "arriba"):
+                r(escena_referencia(c, a.calidad, vista), REFERENCIAS)
+        r(escena_referencia("lapacho", a.calidad, "tres-cuartos", tapa="clasica"), REFERENCIAS)
+        r(escena_referencia("carbon", a.calidad, "tres-cuartos", tapa="mate"), REFERENCIAS)
+        r(escena_referencia("parana", a.calidad, "arriba", boca_abierta=True), REFERENCIAS)
+        r(escena_referencia_guampa(a.calidad), REFERENCIAS)
 
 
 if __name__ == "__main__":

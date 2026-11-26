@@ -80,9 +80,11 @@ Tiempos en esta notebook (i7-1355U, **solo CPU**: la GPU integrada no sirve para
   - Three.js no entra en la carga inicial: la página arranca con 78 KB de JS comprimido.
 - **Ver en tu mesa**, con `<model-viewer>` (se carga al tocar el botón):
   - **Android:** WebXR, con el color y el nombre elegidos; si no hay WebXR, Scene Viewer.
-  - **iPhone:** Quick Look.
+  - **iPhone:** AR Quick Look, con un USDZ que `<model-viewer>` arma en el momento desde la escena ya pintada: lleva el color y el nombre elegidos (tarda unos 80 ms, dentro del toque).
   - **Computadora:** un QR con el mismo diseño para seguir en el celular.
   - El termo aparece a tamaño real (`ar-scale="fixed"`).
+  - **Ojo con React 19:** a un elemento personalizado le asigna como *propiedad* todo lo que el elemento define como propiedad. `ar=""` quedaba como `mv.ar = ""` (falso) y ningún celular ofrecía la AR; va como `ar={true}`. Además, `canActivateAR` se lee después de `updateComplete` (y, si hace falta, de la carga del modelo), porque `<model-viewer>` elige el modo de AR en forma asíncrona.
+  - **Pruebas de punta a punta** con Playwright (`npm run e2e`): emulan un iPhone 14 (WebKit), un Pixel 7 y una computadora. En el iPhone abren el USDZ generado y comprueban el color de la pintura y la textura del nombre; en Android, el intent de Scene Viewer con `resizable=false`; en la computadora, el QR.
 - La escena **"Un día de enero"** (scroll) y la portada usan los renders del color elegido.
 - **Galería** con zoom (`<dialog>` nativo), **comercial**, reseñas de ejemplo marcadas como demo, garantía y preguntas frecuentes.
 
@@ -120,7 +122,7 @@ npx remotion render Spot-16x9 out/kuarahy-spot-16x9.mp4 --gl=angle
 npx remotion render Spot-9x16 out/kuarahy-spot-9x16.mp4 --gl=angle
 
 # 3) Web
-npm install && npm run dev      # npm test: pruebas del personalizador
+npm install && npm run dev      # npm test: pruebas del personalizador · npm run e2e: "Ver en tu mesa" en iPhone, Android y computadora (la primera vez: npx playwright install chromium webkit)
 ```
 
 ## Decisiones
@@ -148,9 +150,9 @@ Diseño, 3D y desarrollo: [William Zarza](https://github.com/williamzarza2003).
 
 1. **Product photos** rendered with Cycles (transparent studio shots in five colors, a hero shot with condensation and hard noon light, two macros and an outdoor scene with a CC0 HDRI).
 2. **A 3D customizer** in React Three Fiber: color, a **live engraved name** drawn onto a UV-mapped band through a `CanvasTexture`, lid and size with a live price. The design is stored in the URL so it can be shared. The GLB is meshopt-compressed from 2.1 MB to 582 KB and lazy-loaded; until it loads, and on low-end devices, the matching Blender render is shown.
-3. **"See it on your table"** AR with `<model-viewer>` (WebXR or Scene Viewer on Android, Quick Look on iOS, a QR code on desktop), at real size.
+3. **"See it on your table"** AR with `<model-viewer>` (WebXR or Scene Viewer on Android, Quick Look on iOS with a USDZ generated on the fly that carries the chosen color and engraved name, a QR code on desktop), at real size. Playwright end-to-end tests emulate an iPhone 14 (WebKit), a Pixel 7 and a desktop, open the generated USDZ and check the paint color and the name texture. Gotcha worth knowing: React 19 assigns custom-element attributes as *properties* when the element defines them, so `ar=""` became `mv.ar = ""` (falsy) and no phone was offered AR; it must be `ar={true}`.
 4. **A 28-second ad** in 16:9 and 9:16 built with Remotion and `@remotion/three` from the same GLB, with sound design synthesized in FFmpeg (no licensed music).
 
-Stack: Blender 5 (Python), Cycles, glTF-Transform + meshoptimizer, sharp (AVIF/WebP), React 19, TypeScript, Vite, React Three Fiber, drei, `<model-viewer>`, Remotion, Vitest.
+Stack: Blender 5 (Python), Cycles, glTF-Transform + meshoptimizer, sharp (AVIF/WebP), React 19, TypeScript, Vite, React Three Fiber, drei, `<model-viewer>`, Remotion, Vitest, Playwright.
 
 Run: `npm install && npm run dev`. The full pipeline (renders, GLB export, compression, video) is described in the Spanish section above. Credits: Poly Haven (CC0 HDRIs), Bricolage Grotesque and Figtree (OFL). Design, 3D and code by William Zarza.

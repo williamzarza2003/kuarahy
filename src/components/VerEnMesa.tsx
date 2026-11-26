@@ -16,6 +16,8 @@ interface MaterialMV {
 }
 interface ModelViewer extends HTMLElement {
   canActivateAR: boolean
+  loaded: boolean
+  updateComplete: Promise<boolean>
   model?: { materials: MaterialMV[] }
   createTexture(uri: string): Promise<unknown>
   activateAR(): void
@@ -28,6 +30,32 @@ declare module 'react' {
       'model-viewer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & Record<string, unknown>
     }
   }
+}
+
+/**
+ * <model-viewer> elige el modo de AR (WebXR, Scene Viewer o Quick Look) en su primer ciclo de
+ * actualización, después de que se define el elemento, y en Android y en Chrome de escritorio
+ * todavía espera a `navigator.xr.isSessionSupported`. Leer `canActivateAR` apenas se define da
+ * `false` en cualquier celular: por eso el iPhone mostraba el QR de "desde la computadora".
+ * Primero esperamos la actualización (alcanza para Quick Look) y, si todavía dice que no, la carga
+ * del modelo, que siempre llega después de esa consulta.
+ */
+async function puedeUsarAR(mv: ModelViewer): Promise<boolean> {
+  await customElements.whenDefined('model-viewer')
+  await mv.updateComplete
+  if (mv.canActivateAR) return true
+  if (!mv.loaded) {
+    await new Promise<void>((listo) => {
+      const fin = () => {
+        mv.removeEventListener('load', fin)
+        mv.removeEventListener('error', fin)
+        listo()
+      }
+      mv.addEventListener('load', fin)
+      mv.addEventListener('error', fin)
+    })
+  }
+  return mv.canActivateAR
 }
 
 /**
@@ -53,12 +81,21 @@ export default function VerEnMesa({ config, abierto, onCerrar }: { config: Confi
     } else if (!abierto && d.open) d.close()
   }, [abierto])
 
-  // Al cargar el modelo: color y nombre como en el visor
+  // ¿Este dispositivo puede abrir la realidad aumentada?
   useEffect(() => {
     const mv = visor.current
     if (!listo || !mv) return
-    // Si se puede usar AR no depende de que cargue el modelo: se sabe apenas existe el elemento
-    customElements.whenDefined('model-viewer').then(() => setPuedeAR(mv.canActivateAR))
+    let vigente = true
+    puedeUsarAR(mv).then((si) => vigente && setPuedeAR(si))
+    return () => {
+      vigente = false
+    }
+  }, [listo])
+
+  // Al cargar el modelo: color y nombre como en el visor (y en el USDZ que arma model-viewer para el iPhone)
+  useEffect(() => {
+    const mv = visor.current
+    if (!listo || !mv) return
     const aplicar = async () => {
       const mats = mv.model?.materials ?? []
       mats.find((m) => m.name === 'Pintura')?.pbrMetallicRoughness.setBaseColorFactor(varianteDe(config.color).base)
@@ -98,7 +135,9 @@ export default function VerEnMesa({ config, abierto, onCerrar }: { config: Confi
           className="mesa__visor"
           src={`/modelos/kuarahy-${tam}-${config.tapa}.glb`}
           alt={`Termo Kuarahy ${varianteDe(config.color).nombre}, ${tam === '15L' ? '1,5 L' : '1 L'}, en realidad aumentada`}
-          ar=""
+          // React 19 pasa a propiedad todo lo que el elemento define como propiedad: ar="" quedaba
+          // como mv.ar = "" (falso) y model-viewer nunca activaba la AR. Tiene que ir como booleano.
+          ar={true}
           ar-modes="webxr scene-viewer quick-look"
           ar-scale="fixed"
           camera-controls=""

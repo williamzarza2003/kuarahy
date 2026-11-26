@@ -13,3 +13,7 @@ blender/renders/
 blender/exports/
 blender/*.log
 blender/__pycache__/
+
+# Playwright
+test-results/
+playwright-report/

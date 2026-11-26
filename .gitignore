@@ -2,3 +2,14 @@ node_modules
 dist
 *.local
 .vercel
+
+# Graphify (mapa local del código para Claude Code)
+graphify-out/
+.claude/settings.local.json
+
+# Blender: HDRIs (se bajan con blender/descargar_assets.py) y renders en PNG
+blender/assets/*.hdr
+blender/renders/
+blender/exports/
+blender/*.log
+blender/__pycache__/
